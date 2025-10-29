@@ -66,6 +66,7 @@ public function buatSurat($jenis)
 }
 
 // Method untuk menyimpan pengajuan surat
+
 public function storeSurat(Request $request)
 {
     // Validasi dasar
@@ -78,7 +79,7 @@ public function storeSurat(Request $request)
         'jenis_kelamin' => 'nullable|in:Laki-laki,Perempuan',
         'pekerjaan' => 'nullable|string|max:255',
         'alamat' => 'nullable|string',
-        'keperluan' => 'nullable|string',
+        'keperluan' => 'required|string', // ✅ Wajib diisi
         
         // File uploads (opsional)
         'file_ktp' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
@@ -94,19 +95,27 @@ public function storeSurat(Request $request)
         }
     }
     
-    // Set data tambahan
+    // ✅ Set data tambahan (PENTING: judul harus ada!)
     $validated['user_id'] = Auth::id();
     $validated['status'] = 'Menunggu';
-    $validated['judul'] = $request->jenis_surat;
+    $validated['judul'] = $request->jenis_surat; // ✅ Field judul WAJIB
+    $validated['jenis_surat'] = $request->jenis_surat;
     $validated['tanggal_pengajuan'] = now();
     
     // Simpan ke database
-    $surat = Surat::create($validated);
-    
-    return redirect()->route('warga.dashboard')
-        ->with('success', 'Pengajuan surat berhasil dikirim! Menunggu verifikasi admin.');
+    try {
+        $surat = Surat::create($validated);
+        
+        return redirect()->route('warga.dashboard')
+            ->with('success', 'Pengajuan surat berhasil dikirim! Menunggu verifikasi admin.');
+    } catch (\Exception $e) {
+        \Log::error('Error creating surat: ' . $e->getMessage());
+        
+        return redirect()->back()
+            ->withInput()
+            ->with('error', 'Gagal menyimpan pengajuan. Silakan coba lagi.');
+    }
 }
-
     // Form pengajuan surat (dynamic berdasarkan jenis)
     public function formPengajuan($jenis)
     {

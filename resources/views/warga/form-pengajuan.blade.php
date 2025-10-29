@@ -16,8 +16,8 @@
         <div class="bg-white rounded-2xl shadow-sm p-6">
             <h2 class="text-lg font-semibold text-gray-800 mb-6">Form Pengajuan</h2>
             
-            <form action="{{ route('warga.store-pengajuan') }}" method="POST" enctype="multipart/form-data">
-                @csrf
+            <form action="{{ route('warga.surat.store') }}" method="POST" enctype="multipart/form-data">
+            @csrf
                 
                 <input type="hidden" name="jenis_surat" value="{{ $jenisSurat }}">
                 
