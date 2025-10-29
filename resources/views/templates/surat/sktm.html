@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+            line-height: 1.6;
+            margin: 40px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #000;
+            padding-bottom: 10px;
+        }
+        .header h2 {
+            margin: 5px 0;
+            font-size: 14pt;
+        }
+        .header p {
+            margin: 2px 0;
+            font-size: 10pt;
+        }
+        .title {
+            text-align: center;
+            margin: 30px 0;
+            text-decoration: underline;
+            font-weight: bold;
+            font-size: 14pt;
+        }
+        .nomor {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .content {
+            text-align: justify;
+            margin: 20px 0;
+        }
+        .data-table {
+            margin: 20px 0;
+            margin-left: 50px;
+        }
+        .data-row {
+            margin: 5px 0;
+        }
+        .data-label {
+            display: inline-block;
+            width: 180px;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: right;
+        }
+        .ttd-section {
+            margin-top: 80px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2><strong>PEMERINTAH KABUPATEN BOJONEGORO</strong></h2>
+        <h2><strong>KECAMATAN DANDER</strong></h2>
+        <h2><strong>DESA SUMBERTLASEH</strong></h2>
+        <p>Sekretariat Jalan Balai Desa No.97 Sumbertlaseh</p>
+    </div>
+
+    <div class="title">
+        SURAT KETERANGAN TIDAK MAMPU
+    </div>
+
+    <div class="nomor">
+        <strong>No: ${nomor_surat}</strong>
+    </div>
+
+    <div class="content">
+        <p>Yang bertanda tangan di bawah ini :</p>
+        
+        <div class="data-table">
+            <div class="data-row">
+                <span class="data-label">N a m a</span>
+                <span>: ${pejabat}</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Jabatan</span>
+                <span>: ${jabatan}</span>
+            </div>
+        </div>
+
+        <p>Menerangkan dengan sesungguhnya bahwa :</p>
+
+        <div class="data-table">
+            <div class="data-row">
+                <span class="data-label">N a m a</span>
+                <span>: ${nama}</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Tempat/Tgl.Lahir</span>
+                <span>: ${tempat_lahir}, ${tanggal_lahir}</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Jenis Kelamin</span>
+                <span>: ${jenis_kelamin}</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Pekerjaan</span>
+                <span>: ${pekerjaan}</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Alamat</span>
+                <span>: ${alamat}</span>
+            </div>
+        </div>
+
+        <p>Orang tersebut diatas adalah benar-benar Penduduk Desa Sumbertlaseh Kecamatan Dander Kabupaten Bojonegoro Propinsi Jawa Timur, yang perekonomiannya kurang/tidak mampu.</p>
+
+        <p>Surat Keterangan ini diberikan untuk ${keperluan}.</p>
+
+        <p>Demikian surat keterangan ini dibuat untuk dipergunakan sebagaimana mestinya.</p>
+    </div>
+
+    <div class="footer">
+        <p>${nama_desa}, ${tanggal}</p>
+        <p><strong>${jabatan}</strong></p>
+        
+        <div style="margin-top: 10px; margin-bottom: 10px;">
+            ${tanda_tangan}
+        </div>
+        
+        <p><strong><u>${pejabat}</u></strong></p>
+    </div>
+</body>
+</html>
