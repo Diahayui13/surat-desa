@@ -1,19 +1,23 @@
 @extends('layouts.admin')
 
 @php
-    // Fallback jika controller tidak mengirim data / tabel permohonan kosong
+    header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+    header("Cache-Control: post-check=0, pre-check=0", false);
+    header("Pragma: no-cache");
+@endphp
+
+@php
+    // Fallback jika controller tidak mengirim data
     $__fallbackFromSurat = false;
 
     if (empty($surats) || (is_iterable($surats) && count($surats) === 0)) {
         $sQuery = \App\Models\Surat::with('user')->orderByDesc('created_at')->get();
 
-        // Hitung statistik dari tabel surats
         $total    = $total    ?? $sQuery->count();
         $menunggu = $menunggu ?? $sQuery->where('status', 'Menunggu')->count();
         $proses   = $proses   ?? $sQuery->where('status', 'Diproses')->count();
         $selesai  = $selesai  ?? $sQuery->where('status', 'Selesai')->count();
 
-        // Map ke struktur yang dipakai view Permohonan
         $surats = $sQuery->map(function ($x) {
             return (object)[
                 'id'                 => $x->id,
@@ -91,7 +95,7 @@
                         @elseif ($s->status === 'Diproses')
                             <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">Diproses</span>
                         @elseif ($s->status === 'Selesai')
-                            <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">Selesai</span>
+                            <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">Selesai</span>
                         @endif
                     </div>
                 </div>
@@ -108,7 +112,7 @@
                         @endif
                         @if($s->tanggal_selesai)
                             <div class="flex items-center">
-                                <i class="fa-solid fa-check-circle text-green-500 mr-1"></i>
+                                <i class="fa-solid fa-check-circle text-blue-500 mr-1"></i>
                                 <span>Selesai: {{ $s->tanggal_selesai->format('d/m/Y H:i') }}</span>
                             </div>
                         @endif
@@ -118,30 +122,30 @@
 
                 <!-- Tombol Aksi -->
                 <div class="flex gap-2 mt-3">
+                    <!-- Tombol Lihat Detail (selalu ada) -->
                     <a href="{{ route('admin.surat.detail', $s->id) }}" 
                        class="flex-1 text-center text-xs bg-blue-100 text-blue-700 px-4 py-2 rounded-lg shadow-sm hover:bg-blue-200 transition">
                         <i class="fa-regular fa-eye mr-1"></i> Lihat Detail
                     </a>
                     
+                    <!-- Tombol Proses (hanya muncul jika status Menunggu) -->
                     @if($s->status === 'Menunggu')
-                        <form action="{{ route('admin.surat.update-status', $s->id) }}" method="POST" class="flex-1">
-                            @csrf
-                            @method('PATCH')
-                            <input type="hidden" name="status" value="Diproses">
-                            <button type="submit" class="w-full text-xs bg-green-100 text-green-700 px-4 py-2 rounded-lg shadow-sm hover:bg-green-200 transition">
-                                <i class="fa-solid fa-play mr-1"></i> Proses
-                            </button>
-                        </form>
+                    <a href="{{ route('admin.surat.proses', $s->id) }}" 
+                    class="flex-1 text-center text-xs bg-green-100 text-green-700 px-4 py-2 rounded-lg shadow-sm hover:bg-green-200 transition">
+                        <i class="fa-solid fa-play mr-1"></i> Proses
+                    </a>
                     @elseif($s->status === 'Diproses')
-                        <form action="{{ route('admin.surat.update-status', $s->id) }}" method="POST" class="flex-1">
-                            @csrf
-                            @method('PATCH')
-                            <input type="hidden" name="status" value="Selesai">
-                            <button type="submit" class="w-full text-xs bg-green-100 text-green-700 px-4 py-2 rounded-lg shadow-sm hover:bg-green-200 transition">
-                                <i class="fa-solid fa-check mr-1"></i> Selesaikan
-                            </button>
-                        </form>
+                    <form action="{{ route('admin.surat.update-status', $s->id) }}" method="POST" class="flex-1">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="status" value="Selesai">
+                        <button type="submit" class="w-full text-xs bg-blue-100 text-blue-700 px-4 py-2 rounded-lg shadow-sm hover:bg-blue-200 transition">
+                            <i class="fa-solid fa-check mr-1"></i> Selesaikan
+                        </button>
+                    </form>
                     @endif
+                    
+                    <!-- Tombol Selesaikan (tidak ada lagi karena sudah ada flow TTD) -->
                 </div>
             </div>
         @endforeach
@@ -321,7 +325,7 @@
         const badges = {
             'Menunggu': '<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-medium">Menunggu</span>',
             'Diproses': '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">Diproses</span>',
-            'Selesai': '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">Selesai</span>'
+            'Selesai': '<span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">Selesai</span>'
         };
         return badges[status] || '';
     }
@@ -339,7 +343,7 @@
             html += `<div class="flex items-center"><i class="fa-solid fa-hourglass-start text-green-500 mr-1"></i><span>Diproses: ${formatDate(s.tanggal_diproses)}</span></div>`;
         }
         if (s.tanggal_selesai) {
-            html += `<div class="flex items-center"><i class="fa-solid fa-check-circle text-green-500 mr-1"></i><span>Selesai: ${formatDate(s.tanggal_selesai)}</span></div>`;
+            html += `<div class="flex items-center"><i class="fa-solid fa-check-circle text-blue-500 mr-1"></i><span>Selesai: ${formatDate(s.tanggal_selesai)}</span></div>`;
         }
         
         html += '</div></div>';
@@ -347,34 +351,32 @@
     }
 
     function getActionButtons(s) {
-        let buttons = `<a href="${BASE_SURAT}/${s.id}" class="flex-1 text-center text-xs bg-blue-100 text-blue-700 px-4 py-2 rounded-lg shadow-sm hover:bg-blue-200 transition"><i class="fa-regular fa-eye mr-1"></i> Lihat Detail</a>`;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    
+    let buttons = `<a href="${BASE_SURAT}/${s.id}" class="flex-1 text-center text-xs bg-blue-100 text-blue-700 px-4 py-2 rounded-lg shadow-sm hover:bg-blue-200 transition"><i class="fa-regular fa-eye mr-1"></i> Lihat Detail</a>`;
 
-        if (s.status === 'Menunggu') {
-            buttons += `
-                <form action="${BASE_SURAT}/${s.id}/update-status" method="POST" class="flex-1">
-                    <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').content}">
-                    <input type="hidden" name="_method" value="PATCH">
-                    <input type="hidden" name="status" value="Diproses">
-                    <button type="submit" class="w-full text-xs bg-green-100 text-green-700 px-4 py-2 rounded-lg shadow-sm hover:bg-green-200 transition">
-                        <i class="fa-solid fa-play mr-1"></i> Proses
-                    </button>
-                </form>
-            `;
-        } else if (s.status === 'Diproses') {
-            buttons += `
-                <form action="${BASE_SURAT}/${s.id}/update-status" method="POST" class="flex-1">
-                    <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').content}">
-                    <input type="hidden" name="_method" value="PATCH">
-                    <input type="hidden" name="status" value="Selesai">
-                    <button type="submit" class="w-full text-xs bg-blue-100 text-blue-700 px-4 py-2 rounded-lg shadow-sm hover:bg-blue-200 transition">
-                        <i class="fa-solid fa-check mr-1"></i> Selesaikan
-                    </button>
-                </form>
-            `;
-        }
-
-        return buttons;
+    if (s.status === 'Menunggu') {
+        buttons += `
+            <a href="/admin/surat/${s.id}/proses" 
+               class="flex-1 text-center text-xs bg-green-100 text-green-700 px-4 py-2 rounded-lg shadow-sm hover:bg-green-200 transition">
+                <i class="fa-solid fa-play mr-1"></i> Proses
+            </a>
+        `;
+    } else if (s.status === 'Diproses') {
+        buttons += `
+            <form action="${BASE_SURAT}/${s.id}/update-status" method="POST" class="flex-1">
+                <input type="hidden" name="_token" value="${csrfToken}">
+                <input type="hidden" name="_method" value="PATCH">
+                <input type="hidden" name="status" value="Selesai">
+                <button type="submit" class="w-full text-xs bg-blue-100 text-blue-700 px-4 py-2 rounded-lg shadow-sm hover:bg-blue-200 transition">
+                    <i class="fa-solid fa-check mr-1"></i> Selesaikan
+                </button>
+            </form>
+        `;
     }
+
+    return buttons;
+}
 </script>
 
 @if($__fallbackFromSurat)

@@ -25,118 +25,115 @@ class AdminController extends Controller
     }
 
     public function permohonan(Request $request)
-{
-    // ✅ Ambil data dari tabel surats
-    $query = Surat::with('user')->orderBy('created_at', 'desc');
-    
-    // Filter berdasarkan status
-    if ($request->has('status') && $request->status !== 'total') {
-        $statusMap = [
-            'menunggu' => 'Menunggu',
-            'diproses' => 'Diproses',
-            'selesai' => 'Selesai'
-        ];
-        
-        if (isset($statusMap[$request->status])) {
-            $query->where('status', $statusMap[$request->status]);
-        }
-    }
-    
-    // Search berdasarkan nama atau NIK
-    if ($request->has('search') && $request->search !== '') {
-        $search = $request->search;
-        $query->where(function($q) use ($search) {
-            $q->where('nama_pemohon', 'like', "%{$search}%")
-              ->orWhere('nik_pemohon', 'like', "%{$search}%");
-        });
-    }
-    
-    $suratList = $query->get();
-    
-    // Hitung statistik dari SEMUA data (bukan hasil filter)
-    $allSurats = Surat::all();
-    $total = $allSurats->count();
-    $menunggu = $allSurats->where('status', 'Menunggu')->count();
-    $proses = $allSurats->where('status', 'Diproses')->count();
-    $selesai = $allSurats->where('status', 'Selesai')->count();
-    
-    // Map data untuk view
-    $surats = $suratList->map(function($item) {
-        return (object)[
-            'id' => $item->id,
-            'nama_pemohon' => $item->nama_pemohon ?? optional($item->user)->name,
-            'nik_pemohon' => $item->nik_pemohon,
-            'jenis_surat' => $item->jenis_surat ?? $item->judul,
-            'judul' => $item->judul,
-            'tanggal_pengajuan' => $item->tanggal_pengajuan ?? $item->created_at,
-            'created_at' => $item->created_at,
-            'status' => $item->status,
-            'tanggal_diproses' => $item->tanggal_diproses,
-            'tanggal_selesai' => $item->tanggal_selesai,
-        ];
-    });
-    
-    // Jika request AJAX, return JSON
-    if ($request->wantsJson() || $request->ajax()) {
-        return response()->json([
-            'surats' => $surats,
-            'stats' => [
-                'total' => $total,
-                'menunggu' => $menunggu,
-                'proses' => $proses,
-                'selesai' => $selesai,
-            ]
-        ]);
-    }
-    
-    return view('admin.permohonan', compact('surats', 'total', 'menunggu', 'proses', 'selesai'));
-}
-
-    public function datasurat()
     {
-        $surat = Permohonan::where('status', 'disetujui')
-        ->orderBy('tanggal_surat', 'desc')
-        ->get();
-    
-    return view('admin.data-surat.surat', compact('surats'));
+        // ✅ Ambil data dari tabel surats
+        $query = Surat::with('user')->orderBy('created_at', 'desc');
+        
+        // Filter berdasarkan status
+        if ($request->has('status') && $request->status !== 'total') {
+            $statusMap = [
+                'menunggu' => 'Menunggu',
+                'diproses' => 'Diproses',
+                'selesai' => 'Selesai'
+            ];
+            
+            if (isset($statusMap[$request->status])) {
+                $query->where('status', $statusMap[$request->status]);
+            }
+        }
+        
+        // Search berdasarkan nama atau NIK
+        if ($request->has('search') && $request->search !== '') {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nama_pemohon', 'like', "%{$search}%")
+                  ->orWhere('nik_pemohon', 'like', "%{$search}%");
+            });
+        }
+        
+        $suratList = $query->get()->fresh(); // <-- TAMBAHKAN INI
+        
+        // Hitung statistik dari SEMUA data (bukan hasil filter)
+        $allSurats = Surat::all();
+        $total = $allSurats->count();
+        $menunggu = $allSurats->where('status', 'Menunggu')->count();
+        $proses = $allSurats->where('status', 'Diproses')->count();
+        $selesai = $allSurats->where('status', 'Selesai')->count();
+        
+        // Map data untuk view
+        $surats = $suratList->map(function($item) {
+            return (object)[
+                'id' => $item->id,
+                'nama_pemohon' => $item->nama_pemohon ?? optional($item->user)->name,
+                'nik_pemohon' => $item->nik_pemohon,
+                'jenis_surat' => $item->jenis_surat ?? $item->judul,
+                'judul' => $item->judul,
+                'tanggal_pengajuan' => $item->tanggal_pengajuan ?? $item->created_at,
+                'created_at' => $item->created_at,
+                'status' => $item->status,
+                'tanggal_diproses' => $item->tanggal_diproses,
+                'tanggal_selesai' => $item->tanggal_selesai,
+            ];
+        });
+        
+        // Jika request AJAX, return JSON
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'surats' => $surats,
+                'stats' => [
+                    'total' => $total,
+                    'menunggu' => $menunggu,
+                    'proses' => $proses,
+                    'selesai' => $selesai,
+                ]
+            ]);
+        }
+        
+        return view('admin.permohonan', compact('surats', 'total', 'menunggu', 'proses', 'selesai'));
+    }
 
-        $surats = [
-            (object)[
-                'id' => 1,
-                'nama_pemohon' => 'Muhammad Andri',
-                'jenis_surat' => 'Surat Keterangan Domisili',
-                'tanggal' => '10 Okt 2025',
-                'status' => 'Disetujui'
-            ],
-            (object)[
-                'id' => 2,
-                'nama_pemohon' => 'Siti Lestari',
-                'jenis_surat' => 'Surat Keterangan Kelahiran',
-                'tanggal' => '12 Okt 2025',
-                'status' => 'Proses'
-            ],
-            (object)[
-                'id' => 3,
-                'nama_pemohon' => 'Budi Hartono',
-                'jenis_surat' => 'Surat Keterangan Menikah',
-                'tanggal' => '09 Okt 2025',
-                'status' => 'Ditolak'
-            ],
-        ];
-
-        return view('admin.surat', compact('surats'));
+    // ✅ FIXED: Method datasurat untuk halaman Data Surat
+    public function datasurat(Request $request)
+    {
+        $query = Surat::with('user')->orderBy('created_at', 'desc');
+        
+        // Filter berdasarkan tanggal
+        if ($request->has('dari_tanggal') && $request->dari_tanggal) {
+            $query->whereDate('created_at', '>=', $request->dari_tanggal);
+        }
+        
+        if ($request->has('sampai_tanggal') && $request->sampai_tanggal) {
+            $query->whereDate('created_at', '<=', $request->sampai_tanggal);
+        }
+        
+        // Filter berdasarkan jenis surat
+        if ($request->has('jenis_surat') && !empty($request->jenis_surat)) {
+            $query->whereIn('jenis_surat', $request->jenis_surat);
+        }
+        
+        // Search berdasarkan nama atau NIK
+        if ($request->has('search') && $request->search !== '') {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nama_pemohon', 'like', "%{$search}%")
+                  ->orWhere('nik_pemohon', 'like', "%{$search}%");
+            });
+        }
+        
+        $surats = $query->paginate(10);
+        
+        return view('admin.data-surat.surat', compact('surats'));
     }
 
     // 📄 Detail surat
     public function detailSurat($id)
-{
-    $surat = Permohonan::with('user')->findOrFail($id);
-    return view('admin.detail-surat', compact('surat'));
- $surat = Permohonan::with('user')->findOrFail($id);
-    return view('admin.detail-surat', compact('surat'));
-}
+    {
+        $surat = Surat::with('user')->findOrFail($id);
+        return view('admin.detail-lengkap', compact('surat'));
 
-public function updateStatus(Request $request, $id)
+    }
+
+    public function updateStatus(Request $request, $id)
 {
     \Log::info('Update Status Request', [
         'id' => $id, 
@@ -144,43 +141,27 @@ public function updateStatus(Request $request, $id)
         'method' => $request->method()
     ]);
     
-    // ✅ Gunakan model Surat (bukan Permohonan)
     $surat = Surat::findOrFail($id);
     
-    // Validasi status
-    $validStatus = ['Diproses', 'Selesai'];
-    if (!in_array($request->status, $validStatus)) {
-        return redirect()->back()->with('error', 'Status tidak valid!');
+    // ✅ Hanya izinkan update status ke "Selesai"
+    if ($request->status !== 'Selesai') {
+        return redirect()->back()->with('error', 'Aksi tidak valid!');
     }
     
-    // Update status
-    $surat->status = $request->status;
-    
-    // Set timestamp
-    if ($request->status === 'Diproses') {
-        $surat->tanggal_diproses = now();
-    } elseif ($request->status === 'Selesai') {
-        $surat->tanggal_selesai = now();
+    // ✅ Validasi: Harus sudah Diproses dulu
+    if ($surat->status !== 'Diproses') {
+        return redirect()->back()->with('error', 'Surat harus diproses terlebih dahulu!');
     }
     
+    // Update status ke Selesai
+    $surat->status = 'Selesai';
+    $surat->tanggal_selesai = now();
     $surat->save();
     
-    \Log::info('Status Updated Successfully', ['surat_id' => $surat->id, 'new_status' => $surat->status]);
-    
-    // Redirect berdasarkan status
-    if ($request->status === 'Diproses') {
-        // Cek apakah route TTD ada
-        if (\Route::has('admin.tanda.tangan')) {
-            return redirect()->route('admin.tanda.tangan', $surat->id)
-                ->with('success', 'Status diperbarui menjadi Diproses. Silakan upload tanda tangan.');
-        } else {
-            return redirect()->route('admin.permohonan')
-                ->with('success', 'Status berhasil diperbarui menjadi Diproses!');
-        }
-    }
+    \Log::info('Status Updated to Selesai', ['surat_id' => $surat->id]);
     
     return redirect()->route('admin.permohonan')
-        ->with('success', 'Status berhasil diperbarui menjadi ' . $request->status . '!');
+        ->with('success', 'Surat berhasil diselesaikan!');
 }
 
     // 👤 Profil admin
@@ -189,70 +170,52 @@ public function updateStatus(Request $request, $id)
         return view('admin.pengaturan');
     }
 
-   // 🧾 Tanda tangan digital
-public function ttddigital()
-{
-    // Ambil permohonan yang statusnya sedang diproses (siap diberi TTD)
-    $surat = Permohonan::where('status', 'diproses')
-        // kalau mau hanya yang belum punya file TTD, un-comment baris bawah:
-        // ->whereNull('tanda_tangan')
-        ->orderBy('created_at', 'desc')
-        ->get();
+    // 🧾 Tanda tangan digital
+    public function ttddigital()
+    {
+        // ✅ Ambil surat yang statusnya Diproses (siap diberi TTD)
+        $surat = Surat::where('status', 'Diproses')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-    // Penting: kirim variabel bernama $surat karena view ttd-digital.blade pakai @forelse ($surat as $item)
-    return view('admin.ttddigital', compact('surat'));
-
-    $permohonanSiapTTD = Permohonan::where('status', 'diproses')
-        ->orderBy('created_at', 'desc')
-        ->get();
-
-    // kirim ke view 'admin.ttddigital' (tanpa tanda minus)
-    // dan mapping ke key 'surat' karena blade pakai @forelse ($surat as $item)
-    return view('admin.ttddigital', ['surat' => $permohonanSiapTTD]);
-
-    // Contoh data dummy sementara
-    $surat = [
-        (object)[
-            'id' => 1,
-            'nama_pemohon' => 'Muhammad Andri',
-            'jenis_surat' => 'Surat Keterangan Domisili',
-            'created_at' => now()->subDays(2),
-            'tanda_tangan' => session('tanda_tangan_path'), // ambil dari session biar preview muncul
-        ],
-        (object)[
-            'id' => 2,
-            'nama_pemohon' => 'Siti Lestari',
-            'jenis_surat' => 'Surat Keterangan Usaha',
-            'created_at' => now()->subDays(1),
-            'tanda_tangan' => session('tanda_tangan_path'),
-        ],
-    ];
-
-    return view('admin.ttddigital', compact('surat'));
-}
-
+        return view('admin.ttddigital', compact('surat'));
+    }
 
 public function tandaTangan($id)
 {
     // Cari surat berdasarkan ID
     $surat = Surat::findOrFail($id);
     
-    // Cek apakah status sudah Diproses
-    if ($surat->status !== 'Diproses') {
+    // ✅ Cek apakah status masih Menunggu (belum diproses)
+    if ($surat->status !== 'Menunggu') {
         return redirect()->route('admin.permohonan')
-            ->with('error', 'Surat ini belum diproses atau sudah selesai!');
+            ->with('error', 'Surat ini sudah diproses atau selesai!');
     }
     
-    // ✅ Sesuaikan dengan view: gunakan variabel $permohonan
-    $permohonan = $surat; // Alias agar view bisa pakai $permohonan
+    // ✅ Alias untuk view
+    $permohonan = $surat;
     
     // Ambil tanda tangan aktif (jika ada sistem TTD master)
-    $tandaTanganAktif = null; // Bisa diganti dengan TandaTangan::where('is_active', true)->first();
+    $tandaTanganAktif = null;
     
     return view('admin.tanda-tangan', compact('permohonan', 'tandaTanganAktif'));
 }
 
-public function uploadTandaTangan(Request $request)
+    public function prosesSurat($id)
+{
+    $surat = Surat::findOrFail($id);
+    
+    // Validasi: Hanya surat dengan status "Menunggu" yang bisa diproses
+    if ($surat->status !== 'Menunggu') {
+        return redirect()->route('admin.permohonan')
+            ->with('error', 'Surat ini sudah diproses atau selesai!');
+    }
+    
+    // ✅ TIDAK ubah status di sini, langsung redirect ke upload TTD
+    return redirect()->route('admin.tanda.tangan', $surat->id);
+}
+
+    public function uploadTandaTangan(Request $request)
 {
     $request->validate([
         'tanda_tangan' => 'required|image|mimes:png,jpg,jpeg|max:2048',
@@ -285,10 +248,7 @@ public function uploadTandaTangan(Request $request)
         $surat->nomor_surat = $this->generateNomorSurat($surat->jenis_surat ?? 'Surat Keterangan');
     }
     
-    if (!$surat->tanggal_surat) {
-        $surat->tanggal_surat = now();
-    }
-    
+    // ✅ BELUM UBAH STATUS - Tunggu konfirmasi dulu
     $surat->save();
 
     // Redirect ke halaman konfirmasi
@@ -296,293 +256,408 @@ public function uploadTandaTangan(Request $request)
         ->with('success', 'Tanda tangan berhasil diupload!');
 }
 
-public function konfirmasiTandaTangan($id)
-{
-    $surat = Surat::with('user')->findOrFail($id);
-    
-    // Cek apakah sudah ada TTD
-    if (!$surat->file_ttd) {
-        return redirect()->route('admin.tanda.tangan', $id)
-            ->with('error', 'Belum ada tanda tangan. Silakan upload terlebih dahulu.');
+    public function konfirmasiTandaTangan($id)
+    {
+        $surat = Surat::with('user')->findOrFail($id);
+        
+        // Cek apakah sudah ada TTD
+        if (!$surat->file_ttd) {
+            return redirect()->route('admin.tanda.tangan', $id)
+                ->with('error', 'Belum ada tanda tangan. Silakan upload terlebih dahulu.');
+        }
+        
+        // Generate preview HTML
+        $preview = $this->generatePreviewSurat($surat);
+        
+        // ✅ Alias $surat ke $permohonan agar view bisa pakai
+        $permohonan = $surat;
+        
+        return view('admin.ttd-konfirmasi', compact('permohonan', 'preview'));
     }
-    
-    // Generate preview HTML
-    $preview = $this->generatePreviewSurat($surat);
-    
-    // ✅ Alias $surat ke $permohonan agar view bisa pakai
-    $permohonan = $surat;
-    
-    return view('admin.ttd-konfirmasi', compact('permohonan', 'preview'));
-}
 
-public function simpanTandaTangan(Request $request, $id)
+    // ✅ FIXED Issue #1: Method simpanTandaTangan (404 Not Found)
+    // ✅ FIXED Issue #2: Redirect ke permohonan masuk setelah konfirmasi
+    public function simpanTandaTangan(Request $request, $id)
 {
-    $permohonan = Permohonan::findOrFail($id);
+    $surat = Surat::findOrFail($id);
     
-    // Ubah status jadi disetujui (Selesai)
-    $permohonan->status = 'disetujui';
-    $permohonan->tanggal_selesai = now();
-    $permohonan->save();
+    // ✅ Ubah status jadi Diproses (bukan Selesai!)
+    $surat->status = 'Diproses';
+    $surat->tanggal_diproses = now();
+    $surat->save();
     
+    // ✅ Redirect ke halaman permohonan masuk
     return redirect()->route('admin.permohonan')
-        ->with('success', 'Surat berhasil diselesaikan dan siap untuk dicetak!');
+        ->with('success', 'Tanda tangan berhasil dikonfirmasi! Surat sekarang berstatus Diproses.');
 }
-
-public function generateSurat(Request $request, $id)
-{
-    $permohonan = Permohonan::findOrFail($id);
     
-    // Data untuk template
-    $data = [
-        'nomor_surat' => $permohonan->nomor_surat,
-        'nama' => $permohonan->nama,
-        'nik' => $permohonan->nik,
-        'tempat_lahir' => $permohonan->tempat_lahir,
-        'tanggal_lahir' => $permohonan->tanggal_lahir->format('d F Y'),
-        'jenis_kelamin' => $permohonan->jenis_kelamin,
-        'pekerjaan' => $permohonan->pekerjaan,
-        'alamat' => $permohonan->alamat,
-        'keperluan' => $permohonan->keperluan,
-        'tanggal' => $permohonan->tanggal_surat->format('d F Y'),
-        'pejabat' => 'Kepala Desa Sumbertlaseh', // Bisa diambil dari DB
-        'jabatan' => 'Kepala Desa',
-        'nama_desa' => 'Sumbertlaseh',
-        'ttd_path' => storage_path('app/public/' . $permohonan->tanda_tangan),
-    ];
-    $pdf = $this->generatePDFFromTemplate($permohonan->jenis_surat, $data);
-
-// Simpan PDF
-    $filename = 'surat_' . $permohonan->id . '_' . time() . '.pdf';
-    $path = 'surat/' . $filename;
-    Storage::disk('public')->put($path, $pdf);
+    public function batalKonfirmasi($id)
+    {
+    // ✅ LOG: Pastikan method ini DIPANGGIL
+    \Log::info('🔴 batalKonfirmasi() CALLED', ['id' => $id]);
     
-    // Update status
-    $permohonan->file_surat = $path;
-    $permohonan->status = 'disetujui';
-    $permohonan->save();
-    
-    return redirect()->route('admin.surat')->with('success', 'Surat berhasil digenerate!');
-}
-
-private function generatePreviewSurat($surat)
-{
-    // Ambil data user jika ada relasi
-    $user = $surat->user;
-    
-    $html = '
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body { 
-                font-family: "Times New Roman", serif; 
-                padding: 40px;
-                line-height: 1.8;
-                max-width: 800px;
-                margin: 0 auto;
-                background: white;
-            }
-            .kop-surat {
-                text-align: center;
-                border-bottom: 3px solid #000;
-                padding-bottom: 15px;
-                margin-bottom: 30px;
-            }
-            .kop-surat h2 { margin: 5px 0; font-size: 18pt; font-weight: bold; }
-            .kop-surat h3 { margin: 3px 0; font-size: 16pt; font-weight: bold; }
-            .kop-surat p { margin: 2px 0; font-size: 11pt; }
-            .judul {
-                text-align: center;
-                font-weight: bold;
-                text-decoration: underline;
-                margin: 30px 0;
-                font-size: 14pt;
-            }
-            .nomor {
-                text-align: center;
-                margin-bottom: 30px;
-                font-size: 11pt;
-            }
-            table { width: 100%; margin: 20px 0; border-collapse: collapse; }
-            table td { padding: 5px 0; vertical-align: top; }
-            table td:first-child { width: 200px; }
-            table td:nth-child(2) { width: 20px; text-align: center; }
-            .ttd-section {
-                margin-top: 60px;
-                text-align: right;
-            }
-            .ttd-container {
-                display: inline-block;
-                text-align: center;
-                min-width: 250px;
-            }
-            .ttd-image {
-                max-height: 100px;
-                max-width: 200px;
-                margin: 10px 0;
-            }
-            .ttd-nama {
-                font-weight: bold;
-                text-decoration: underline;
-                margin-top: 10px;
-            }
-            .content { margin: 20px 0; text-align: justify; }
-        </style>
-    </head>
-    <body>
-        <!-- Kop Surat -->
-        <div class="kop-surat">
-            <h2>PEMERINTAH KABUPATEN BOJONEGORO</h2>
-            <h3>KECAMATAN DANDER</h3>
-            <h3>DESA SUMBERTLASEH</h3>
-            <p>Sekretariat Jalan Balai Desa No.97 Sumbertlaseh</p>
-        </div>
+    try {
+        $surat = Surat::findOrFail($id);
         
-        <!-- Judul -->
-        <div class="judul">
-            ' . strtoupper($surat->jenis_surat ?? 'SURAT KETERANGAN') . '
-        </div>
+        \Log::info('📋 Data SEBELUM Update', [
+            'id' => $surat->id,
+            'status' => $surat->status,
+            'file_ttd' => $surat->file_ttd,
+        ]);
         
-        <!-- Nomor Surat -->
-        <div class="nomor">
-            Nomor: ' . ($surat->nomor_surat ?? '___/___/___/' . date('Y')) . '
-        </div>
-        
-        <!-- Isi Surat -->
-        <div class="content">
-            <p>Yang bertanda tangan di bawah ini:</p>
-            <table>
-                <tr>
-                    <td>Nama</td>
-                    <td>:</td>
-                    <td>Kepala Desa Sumbertlaseh</td>
-                </tr>
-                <tr>
-                    <td>Jabatan</td>
-                    <td>:</td>
-                    <td>Kepala Desa</td>
-                </tr>
-            </table>
-            
-            <p>Menerangkan dengan sesungguhnya bahwa:</p>
-            <table>
-                <tr>
-                    <td>Nama</td>
-                    <td>:</td>
-                    <td><strong>' . ($surat->nama_pemohon ?? ($user->name ?? 'N/A')) . '</strong></td>
-                </tr>
-                <tr>
-                    <td>NIK</td>
-                    <td>:</td>
-                    <td><strong>' . ($surat->nik_pemohon ?? 'N/A') . '</strong></td>
-                </tr>
-                <tr>
-                    <td>Tempat/Tgl. Lahir</td>
-                    <td>:</td>
-                    <td>' . ($surat->tempat_lahir ?? '-') . ', ' . ($surat->tanggal_lahir ? \Carbon\Carbon::parse($surat->tanggal_lahir)->format('d F Y') : '-') . '</td>
-                </tr>
-                <tr>
-                    <td>Jenis Kelamin</td>
-                    <td>:</td>
-                    <td>' . ($surat->jenis_kelamin ?? '-') . '</td>
-                </tr>
-                <tr>
-                    <td>Pekerjaan</td>
-                    <td>:</td>
-                    <td>' . ($surat->pekerjaan ?? '-') . '</td>
-                </tr>
-                <tr>
-                    <td>Alamat</td>
-                    <td>:</td>
-                    <td>' . ($surat->alamat ?? '-') . '</td>
-                </tr>
-            </table>
-            
-            <p>Demikian surat keterangan ini dibuat untuk dipergunakan sebagaimana mestinya.</p>
-        </div>
-        
-        <!-- Tanda Tangan -->
-        <div class="ttd-section">
-            <div class="ttd-container">
-                <p>Sumbertlaseh, ' . now()->locale('id')->isoFormat('D MMMM Y') . '</p>
-                <p style="font-weight: bold; margin-top: 10px;">Kepala Desa Sumbertlaseh</p>
-                ';
-    
-    // Tambahkan gambar TTD
-    if ($surat->file_ttd) {
-        $ttdPath = storage_path('app/public/' . $surat->file_ttd);
-        if (file_exists($ttdPath)) {
-            $ttdBase64 = base64_encode(file_get_contents($ttdPath));
-            $mimeType = mime_content_type($ttdPath);
-            $html .= '<img src="data:' . $mimeType . ';base64,' . $ttdBase64 . '" class="ttd-image">';
+        // Hapus file TTD
+        if ($surat->file_ttd && Storage::disk('public')->exists($surat->file_ttd)) {
+            Storage::disk('public')->delete($surat->file_ttd);
+            \Log::info('🗑️ File TTD dihapus: ' . $surat->file_ttd);
         }
+        
+        // ✅ UPDATE dengan method update() lebih reliable
+        $updated = $surat->update([
+            'status' => 'Menunggu',
+            'file_ttd' => null,
+            'tanggal_diproses' => null,
+        ]);
+        
+        \Log::info('✅ Update result: ' . ($updated ? 'SUCCESS' : 'FAILED'));
+        
+        // Refresh model
+        $surat->refresh();
+        
+        \Log::info('📋 Data SETELAH Update', [
+            'id' => $surat->id,
+            'status' => $surat->status,
+            'file_ttd' => $surat->file_ttd,
+        ]);
+        
+        return redirect()->route('admin.permohonan')
+            ->with('success', 'Status surat berhasil dikembalikan ke Menunggu!');
+            
+    } catch (\Exception $e) {
+        \Log::error('❌ ERROR di batalKonfirmasi', [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return redirect()->back()->with('error', 'Gagal: ' . $e->getMessage());
     }
-    
-    $html .= '
-                <div class="ttd-nama">( NAMA KEPALA DESA )</div>
+}
+
+    public function generateSurat(Request $request, $id)
+    {
+        $surat = Surat::findOrFail($id);
+        
+        // Data untuk template
+        $data = [
+            'nomor_surat' => $surat->nomor_surat,
+            'nama' => $surat->nama_pemohon,
+            'nik' => $surat->nik_pemohon,
+            'tempat_lahir' => $surat->tempat_lahir,
+            'tanggal_lahir' => \Carbon\Carbon::parse($surat->tanggal_lahir)->format('d F Y'),
+            'jenis_kelamin' => $surat->jenis_kelamin,
+            'pekerjaan' => $surat->pekerjaan,
+            'alamat' => $surat->alamat,
+            'keperluan' => $surat->keperluan,
+            'tanggal' => now()->format('d F Y'),
+            'pejabat' => 'Kepala Desa Sumbertlaseh',
+            'jabatan' => 'Kepala Desa',
+            'nama_desa' => 'Sumbertlaseh',
+            'ttd_path' => storage_path('app/public/' . $surat->file_ttd),
+        ];
+        
+        $pdf = $this->generatePDFFromTemplate($surat->jenis_surat, $data);
+
+        // Simpan PDF
+        $filename = 'surat_' . $surat->id . '_' . time() . '.pdf';
+        $path = 'surat/' . $filename;
+        Storage::disk('public')->put($path, $pdf);
+        
+        // Update status
+        $surat->file_surat = $path;
+        $surat->status = 'Selesai';
+        $surat->save();
+        
+        return redirect()->route('admin.surat')->with('success', 'Surat berhasil digenerate!');
+    }
+
+    private function generatePreviewSurat($surat)
+    {
+        // Ambil data user jika ada relasi
+        $user = $surat->user;
+        
+        $html = '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body { 
+                    font-family: "Times New Roman", serif; 
+                    padding: 40px;
+                    line-height: 1.8;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    background: white;
+                }
+                .kop-surat {
+                    text-align: center;
+                    border-bottom: 3px solid #000;
+                    padding-bottom: 15px;
+                    margin-bottom: 30px;
+                }
+                .kop-surat h2 { margin: 5px 0; font-size: 18pt; font-weight: bold; }
+                .kop-surat h3 { margin: 3px 0; font-size: 16pt; font-weight: bold; }
+                .kop-surat p { margin: 2px 0; font-size: 11pt; }
+                .judul {
+                    text-align: center;
+                    font-weight: bold;
+                    text-decoration: underline;
+                    margin: 30px 0;
+                    font-size: 14pt;
+                }
+                .nomor {
+                    text-align: center;
+                    margin-bottom: 30px;
+                    font-size: 11pt;
+                }
+                table { width: 100%; margin: 20px 0; border-collapse: collapse; }
+                table td { padding: 5px 0; vertical-align: top; }
+                table td:first-child { width: 200px; }
+                table td:nth-child(2) { width: 20px; text-align: center; }
+                .ttd-section {
+                    margin-top: 60px;
+                    text-align: right;
+                }
+                .ttd-container {
+                    display: inline-block;
+                    text-align: center;
+                    min-width: 250px;
+                }
+                .ttd-image {
+                    max-height: 100px;
+                    max-width: 200px;
+                    margin: 10px 0;
+                }
+                .ttd-nama {
+                    font-weight: bold;
+                    text-decoration: underline;
+                    margin-top: 10px;
+                }
+                .content { margin: 20px 0; text-align: justify; }
+            </style>
+        </head>
+        <body>
+            <!-- Kop Surat -->
+            <div class="kop-surat">
+                <h2>PEMERINTAH KABUPATEN BOJONEGORO</h2>
+                <h3>KECAMATAN DANDER</h3>
+                <h3>DESA SUMBERTLASEH</h3>
+                <p>Sekretariat Jalan Balai Desa No.97 Sumbertlaseh</p>
             </div>
-        </div>
-    </body>
-    </html>
-    ';
-    
-    return $html;
-}
-
-private function generateNomorSurat($jenisSurat)
-{
-    $prefix = '';
-    
-    switch ($jenisSurat) {
-        case 'Surat Keterangan Tidak Mampu':
-            $prefix = 'SKTM';
-            break;
-        case 'Surat Keterangan Domisili':
-            $prefix = 'SKD';
-            break;
-        case 'Surat Keterangan Usaha':
-            $prefix = 'SKU';
-            break;
-        case 'Surat Keterangan Ahli Waris':
-            $prefix = 'SKAW';
-            break;
-        default:
-            $prefix = 'SK';
-    }
-    
-    $bulan = now()->format('m');
-    $tahun = now()->format('Y');
-    $counter = Permohonan::whereYear('created_at', $tahun)
-        ->whereMonth('created_at', $bulan)
-        ->count() + 1;
-    
-    return sprintf('%s/%03d/%s/%s', $prefix, $counter, $bulan, $tahun);
-}
-
-// Helper: Generate PDF dari template
-private function generatePDFFromTemplate($jenisSurat, $data)
-{
-    $template = $this->getTemplateByJenisSurat($jenisSurat);
-    
-    // Replace semua variable
-    foreach ($data as $key => $value) {
-        if ($key !== 'ttd_path') {
-            $template = str_replace('${'.$key.'}', $value, $template);
+            
+            <!-- Judul -->
+            <div class="judul">
+                ' . strtoupper($surat->jenis_surat ?? 'SURAT KETERANGAN') . '
+            </div>
+            
+            <!-- Nomor Surat -->
+            <div class="nomor">
+                Nomor: ' . ($surat->nomor_surat ?? '___/___/___/' . date('Y')) . '
+            </div>
+            
+            <!-- Isi Surat -->
+            <div class="content">
+                <p>Yang bertanda tangan di bawah ini:</p>
+                <table>
+                    <tr>
+                        <td>Nama</td>
+                        <td>:</td>
+                        <td>Kepala Desa Sumbertlaseh</td>
+                    </tr>
+                    <tr>
+                        <td>Jabatan</td>
+                        <td>:</td>
+                        <td>Kepala Desa</td>
+                    </tr>
+                </table>
+                
+                <p>Menerangkan dengan sesungguhnya bahwa:</p>
+                <table>
+                    <tr>
+                        <td>Nama</td>
+                        <td>:</td>
+                        <td><strong>' . ($surat->nama_pemohon ?? ($user->name ?? 'N/A')) . '</strong></td>
+                    </tr>
+                    <tr>
+                        <td>NIK</td>
+                        <td>:</td>
+                        <td><strong>' . ($surat->nik_pemohon ?? 'N/A') . '</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Tempat/Tgl. Lahir</td>
+                        <td>:</td>
+                        <td>' . ($surat->tempat_lahir ?? '-') . ', ' . ($surat->tanggal_lahir ? \Carbon\Carbon::parse($surat->tanggal_lahir)->format('d F Y') : '-') . '</td>
+                    </tr>
+                    <tr>
+                        <td>Jenis Kelamin</td>
+                        <td>:</td>
+                        <td>' . ($surat->jenis_kelamin ?? '-') . '</td>
+                    </tr>
+                    <tr>
+                        <td>Pekerjaan</td>
+                        <td>:</td>
+                        <td>' . ($surat->pekerjaan ?? '-') . '</td>
+                    </tr>
+                    <tr>
+                        <td>Alamat</td>
+                        <td>:</td>
+                        <td>' . ($surat->alamat ?? '-') . '</td>
+                    </tr>
+                </table>
+                
+                <p>Demikian surat keterangan ini dibuat untuk dipergunakan sebagaimana mestinya.</p>
+            </div>
+            
+            <!-- Tanda Tangan -->
+            <div class="ttd-section">
+                <div class="ttd-container">
+                    <p>Sumbertlaseh, ' . now()->locale('id')->isoFormat('D MMMM Y') . '</p>
+                    <p style="font-weight: bold; margin-top: 10px;">Kepala Desa Sumbertlaseh</p>
+                    ';
+        
+        // Tambahkan gambar TTD
+        if ($surat->file_ttd) {
+            $ttdPath = storage_path('app/public/' . $surat->file_ttd);
+            if (file_exists($ttdPath)) {
+                $ttdBase64 = base64_encode(file_get_contents($ttdPath));
+                $mimeType = mime_content_type($ttdPath);
+                $html .= '<img src="data:' . $mimeType . ';base64,' . $ttdBase64 . '" class="ttd-image">';
+            }
         }
+        
+        $html .= '
+                    <div class="ttd-nama">( NAMA KEPALA DESA )</div>
+                </div>
+            </div>
+        </body>
+        </html>
+        ';
+        
+        return $html;
     }
-    
-    // Convert image TTD ke base64 untuk PDF
-    if (isset($data['ttd_path']) && file_exists($data['ttd_path'])) {
-        $ttdBase64 = base64_encode(file_get_contents($data['ttd_path']));
-        $ttdImg = '<img src="data:image/png;base64,'.$ttdBase64.'" style="width:150px;height:auto;" />';
-        $template = str_replace('${tanda_tangan}', $ttdImg, $template);
-    }
-    
-    // Generate PDF dengan Dompdf (install dulu)
-    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($template);
-    $pdf->setPaper('A4', 'portrait');
 
-    return $pdf->output();
+    private function generateNomorSurat($jenisSurat)
+    {
+        $prefix = '';
+        
+        switch ($jenisSurat) {
+            case 'Surat Keterangan Tidak Mampu':
+                $prefix = 'SKTM';
+                break;
+            case 'Surat Keterangan Domisili':
+                $prefix = 'SKD';
+                break;
+            case 'Surat Keterangan Usaha':
+                $prefix = 'SKU';
+                break;
+            case 'Surat Keterangan Ahli Waris':
+                $prefix = 'SKAW';
+                break;
+            default:
+                $prefix = 'SK';
+        }
+        
+        $bulan = now()->format('m');
+        $tahun = now()->format('Y');
+        $counter = Surat::whereYear('created_at', $tahun)
+            ->whereMonth('created_at', $bulan)
+            ->count() + 1;
+        
+        return sprintf('%s/%03d/%s/%s', $prefix, $counter, $bulan, $tahun);
+    }
+
+    // Helper: Generate PDF dari template
+    private function generatePDFFromTemplate($jenisSurat, $data)
+    {
+        $template = $this->getTemplateByJenisSurat($jenisSurat);
+        
+        // Replace semua variable
+        foreach ($data as $key => $value) {
+            if ($key !== 'ttd_path') {
+                $template = str_replace('${'.$key.'}', $value, $template);
+            }
+        }
+        
+        // Convert image TTD ke base64 untuk PDF
+        if (isset($data['ttd_path']) && file_exists($data['ttd_path'])) {
+            $ttdBase64 = base64_encode(file_get_contents($data['ttd_path']));
+            $ttdImg = '<img src="data:image/png;base64,'.$ttdBase64.'" style="width:150px;height:auto;" />';
+            $template = str_replace('${tanda_tangan}', $ttdImg, $template);
+        }
+        
+        // Generate PDF dengan Dompdf
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($template);
+        $pdf->setPaper('A4', 'portrait');
+
+        return $pdf->output();
+    }
+    
+    private function getTemplateByJenisSurat($jenisSurat)
+    {
+        // Return template HTML sesuai jenis surat
+        // Untuk sementara return template default
+        return '<html><body><h1>' . $jenisSurat . '</h1></body></html>';
+    }
+
+    /**
+ * ✅ NEW: Upload TTD langsung dari halaman TTD Digital
+ */
+public function uploadTandaTanganDirect(Request $request)
+{
+    $request->validate([
+        'tanda_tangan' => 'required|image|mimes:png,jpg,jpeg|max:2048',
+        'surat_id' => 'required|exists:surats,id'
+    ]);
+
+    $surat = Surat::findOrFail($request->surat_id);
+
+    // Hapus TTD lama jika ada
+    if ($surat->file_ttd && Storage::disk('public')->exists($surat->file_ttd)) {
+        Storage::disk('public')->delete($surat->file_ttd);
+    }
+
+    // Simpan file TTD baru
+    $file = $request->file('tanda_tangan');
+    $filename = 'ttd_' . time() . '_' . $surat->id . '.' . $file->getClientOriginalExtension();
+    $path = $file->storeAs('tanda-tangan', $filename, 'public');
+
+    $surat->file_ttd = $path;
+    $surat->status = 'Diproses';
+    $surat->tanggal_diproses = now();
+    
+    if (!$surat->nomor_surat) {
+        $surat->nomor_surat = $this->generateNomorSurat($surat->jenis_surat ?? 'Surat Keterangan');
+    }
+    
+    $surat->save();
+
+    return redirect()->route('admin.ttddigital')
+        ->with('success', 'Tanda tangan berhasil diupload!');
+}
+
+/**
+ * ✅ NEW: Hapus TTD
+ */
+public function deleteTandaTangan($id)
+{
+    $surat = Surat::findOrFail($id);
+    
+    if ($surat->file_ttd && Storage::disk('public')->exists($surat->file_ttd)) {
+        Storage::disk('public')->delete($surat->file_ttd);
+    }
+    
+    $surat->file_ttd = null;
+    $surat->save();
+    
+    return redirect()->back()->with('success', 'Tanda tangan berhasil dihapus!');
 }
 }

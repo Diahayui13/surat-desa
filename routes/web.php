@@ -38,6 +38,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // ✨ Route alias untuk detail-surat (backward compatibility)
     Route::get('/datasurat/{id}', [AdminController::class, 'detailSurat'])->name('detail-surat');
     
+    // ✅ ROUTE BARU: Tombol "Proses" → Redirect ke TTD Digital
+    Route::get('/surat/{id}/proses', [AdminController::class, 'prosesSurat'])->name('surat.proses');
+    
     // Update Status
     Route::match(['post', 'patch'], '/surat/{id}/update-status', [AdminController::class, 'updateStatus'])->name('surat.update-status');
     
@@ -45,9 +48,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/ttddigital', [AdminController::class, 'ttddigital'])->name('ttddigital');
     Route::get('/tanda-tangan/{id}', [AdminController::class, 'tandaTangan'])->name('tanda.tangan');
     Route::post('/tanda-tangan/upload', [AdminController::class, 'uploadTandaTangan'])->name('tanda.tangan.upload');
+    Route::post('/ttddigital/upload', [AdminController::class, 'uploadTandaTanganDirect'])->name('ttddigital.upload');
+    Route::delete('/ttddigital/delete/{id}', [AdminController::class, 'deleteTandaTangan'])->name('ttddigital.delete');
     Route::get('/tanda-tangan/konfirmasi/{id}', [AdminController::class, 'konfirmasiTandaTangan'])->name('tanda.tangan.konfirmasi');
     Route::post('/tanda-tangan/simpan/{id}', [AdminController::class, 'simpanTandaTangan'])->name('tanda.tangan.simpan');
     
+    // Route untuk batalkan konfirmasi (Issue #3)
+    Route::post('/tanda-tangan/batal/{id}', [AdminController::class, 'batalKonfirmasi'])->name('tanda.tangan.batal');
+
     // Generate Surat
     Route::post('/surat/generate/{id}', [AdminController::class, 'generateSurat'])->name('surat.generate');
     
