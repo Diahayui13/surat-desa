@@ -1,0 +1,19 @@
+body {
+  background-color: #CBE6F6;
+  color: #333;
+  font-family: Arial, sans-serif;
+}
+.navbar {
+  background-color: #FADADD !important;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+.btn-primary {
+  background-color: #FADADD !important;
+  border: none;
+  color: #333;
+}
